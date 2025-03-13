@@ -926,7 +926,7 @@
  * Override with M201
  *                                      X, Y, Z [, I [, J [, K]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_MAX_ACCELERATION      { 12000, 12000, 600, 6000 }
+#define DEFAULT_MAX_ACCELERATION      { 10000, 10000, 100, 6000 }
 
 //#define LIMITED_MAX_ACCEL_EDITING     // Limit edit via M201 or LCD to DEFAULT_MAX_ACCELERATION * 2
 #if ENABLED(LIMITED_MAX_ACCEL_EDITING)
@@ -942,9 +942,9 @@
  *   M204 T    Travel Acceleration
  *   M204 D    Peak ratio
  */
-#define DEFAULT_ACCELERATION          8000    // X, Y, Z and E acceleration for printing moves
-#define DEFAULT_RETRACT_ACCELERATION  4000    // E acceleration for retracts
-#define DEFAULT_TRAVEL_ACCELERATION   10000   // X, Y, Z acceleration for travel (non printing) moves
+#define DEFAULT_ACCELERATION          1000    // X, Y, Z and E acceleration for printing moves
+#define DEFAULT_RETRACT_ACCELERATION  6000    // E acceleration for retracts
+#define DEFAULT_TRAVEL_ACCELERATION   6000   // X, Y, Z acceleration for travel (non printing) moves
 #define DEFAULT_ACCELERATION_TO_DECELERATION_RATIO  50    // X, Y, Z acceleration for travel (non printing) moves
 
 /**
