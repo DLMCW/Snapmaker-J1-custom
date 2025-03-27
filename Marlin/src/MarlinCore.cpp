@@ -830,7 +830,14 @@ void idle(bool no_stepper_sleep/*=false*/) {
   (void)check_tool_sensor_stats(active_extruder, true);
 
   // Handle filament runout sensors
-  TERN_(HAS_FILAMENT_SENSOR, if (!is_hmi_printing) filament_sensor.check());
+  TERN_(HAS_FILAMENT_SENSOR, if (!is_hmi_printing) {
+    filament_sensor.check();
+    HOTEND_LOOP() {
+      if (filament_sensor.is_trigger(e) && !FilamentMonitor::is_triggered(e)) {  // Only if not already triggered
+        FilamentMonitor::runout_detected(e);
+      }
+    }
+  });
 
   // Run HAL idle tasks
   TERN_(HAL_IDLETASK, HAL_idletask());

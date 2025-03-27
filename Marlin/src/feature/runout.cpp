@@ -27,6 +27,7 @@
  #include "../inc/MarlinConfigPre.h"
  #include "../../../snapmaker/module/print_control.h"
  #include "../../../snapmaker/module/system.h"
+ 
  #if HAS_FILAMENT_SENSOR
  
  #include "runout.h"
@@ -72,14 +73,19 @@
  }
  
  void FilamentMonitor::runout_detected(uint8_t e) {
-  if (is_hmi_printing) return;  // Skip for HMI prints
-  triggered[e] = true;
-  queue.enqueue_now_P(PSTR("M600"));
-  //system_service.set_status(SYSTEM_STATUE_PAUSING, SYSTEM_STATUE_SCOURCE_FILAMENT);
+   if (is_hmi_printing) return;
+   if (is_triggered(e)) return;
+   SERIAL_ECHOLNPAIR("Runout detected on extruder ", e);
+   triggered[e] = true;
+   if (!queue.enqueue_one_P(PSTR("M600"))) {  // Changed to enqueue_one_P
+     SERIAL_ECHOLNPGM("Failed to enqueue M600");
+   } else {
+     SERIAL_ECHOLNPGM("M600 enqueued successfully");
+   }
  }
  
  void event_filament_runout(const uint8_t extruder) {
-   if (did_pause_print) return;  // Action already in progress. Purge triggered repeated runout.
+  if (did_pause_print || !is_hmi_printing) return;  // Skip for OctoPrint
  
    #if ENABLED(TOOLCHANGE_MIGRATION_FEATURE)
      if (migration.in_progress) {

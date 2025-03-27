@@ -19,62 +19,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
- #pragma once
+#pragma once
 
- #ifndef RUNOUT_H
- #define RUNOUT_H
- 
- /**
-  * feature/runout.h - Runout sensor support
-  */
- 
- #include "../sd/cardreader.h"
- #include "../module/printcounter.h"
- #include "../module/planner.h"
- #include "../module/stepper.h" // for block_t
- #include "../gcode/queue.h"
- #include "../feature/pause.h"
- #include "../inc/MarlinConfig.h"
- 
- #if ENABLED(EXTENSIBLE_UI)
-   #include "../lcd/extui/ui_api.h"
- #endif
- 
- #if HAS_FILAMENT_SENSOR
- 
- //#define FILAMENT_RUNOUT_SENSOR_DEBUG
- #ifndef FILAMENT_RUNOUT_THRESHOLD
-   #define FILAMENT_RUNOUT_THRESHOLD 5
- #endif
- 
- class FilamentMonitorBase {
-   public:
-     static bool enabled, filament_ran_out;
- 
-     #if ENABLED(HOST_ACTION_COMMANDS)
-       static bool host_handling;
-     #else
-       static constexpr bool host_handling = false;
-     #endif
- };
- 
- class FilamentMonitor : public FilamentMonitorBase {
-   public:
-     static void setup();
-     static void reset();
-     static void filament_present(const uint8_t extruder);
-     static void runout_detected(const uint8_t extruder);
-     static bool is_triggered(const uint8_t extruder) { return triggered[extruder]; }
-     static void set_triggered(const uint8_t extruder, bool value) { triggered[extruder] = value; }
- 
-   private:
-     static bool triggered[NUM_RUNOUT_SENSORS]; // Track runout state per extruder
- };
- 
- extern FilamentMonitor runout;
- 
- void event_filament_runout(const uint8_t extruder);
- 
- #endif // HAS_FILAMENT_SENSOR
- 
- #endif // RUNOUT_H
+#ifndef RUNOUT_H
+#define RUNOUT_H
+
+/**
+ * feature/runout.h - Runout sensor support
+ */
+
+#include "../sd/cardreader.h"
+#include "../module/printcounter.h"
+#include "../module/planner.h"
+#include "../module/stepper.h" // for block_t
+#include "../gcode/queue.h"
+#include "../feature/pause.h"
+#include "../inc/MarlinConfig.h"
+
+#if ENABLED(EXTENSIBLE_UI)
+  #include "../lcd/extui/ui_api.h"
+#endif
+
+#if HAS_FILAMENT_SENSOR
+
+//#define FILAMENT_RUNOUT_SENSOR_DEBUG
+#ifndef FILAMENT_RUNOUT_THRESHOLD
+  #define FILAMENT_RUNOUT_THRESHOLD 5
+#endif
+
+class FilamentMonitorBase {
+  public:
+    static bool enabled, filament_ran_out;
+
+    #if ENABLED(HOST_ACTION_COMMANDS)
+      static bool host_handling;
+    #else
+      static constexpr bool host_handling = false;
+    #endif
+};
+
+class FilamentMonitor : public FilamentMonitorBase {
+  public:
+    static void setup();
+    static void reset();
+    static void filament_present(const uint8_t extruder);
+    static void runout_detected(const uint8_t extruder);
+    static bool is_triggered(const uint8_t extruder) { return triggered[extruder]; }
+    static void set_triggered(const uint8_t extruder, bool value) { triggered[extruder] = value; }
+
+  private:
+    static bool triggered[NUM_RUNOUT_SENSORS]; // Track runout state per extruder
+};
+
+extern FilamentMonitor runout;
+
+void event_filament_runout(const uint8_t extruder);
+
+#endif // HAS_FILAMENT_SENSOR
+
+#endif // RUNOUT_H
