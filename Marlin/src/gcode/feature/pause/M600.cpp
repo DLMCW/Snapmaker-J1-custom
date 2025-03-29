@@ -21,13 +21,6 @@
  */
 
  #include "../../../inc/MarlinConfig.h"
- #include "../../../../../snapmaker/debug/debug.h"
- #include "../../../../../snapmaker/module/print_control.h"
- #include "../../../../../snapmaker/module/power_loss.h"
- #include "../../../../../snapmaker/module/filament_sensor.h"
- #include "../../../../../snapmaker/module/system.h"
- 
- #if ENABLED(ADVANCED_PAUSE_FEATURE)
  #include "../../../module/temperature.h"
  #include "../../gcode.h"
  #include "../../../feature/pause.h"
@@ -35,113 +28,74 @@
  #include "../../../module/planner.h"
  #include "../../../module/printcounter.h"
  #include "../../../lcd/marlinui.h"
- 
- #if HAS_MULTI_EXTRUDER
-   #include "../../../module/tool_change.h"
- #endif
- 
- #if HAS_FILAMENT_SENSOR
-   #include "../../../feature/runout.h"
- #endif
+ #include "../../../module/tool_change.h"
+ #include "../../../feature/runout.h"
+ #include "../../../../../snapmaker/debug/debug.h"
+ #include "../../../../../snapmaker/module/print_control.h"
+ #include "../../../../../snapmaker/module/power_loss.h"
+ #include "../../../../../snapmaker/module/filament_sensor.h"
+ #include "../../../../../snapmaker/module/system.h"
  
  void GcodeSuite::M600() {
-  planner.synchronize();
-  power_loss.m600_cur_line = queue.file_line_number();
-  LOG_I("power_loss.m600_cur_line set to %d\r\n", power_loss.cur_line);
-  if (is_hmi_printing) {
-    system_service.set_status(SYSTEM_STATUE_PAUSING, SYSTEM_STATUE_SCOURCE_M600);
-  }
-
-  const int8_t target_extruder = get_target_extruder_from_command();
-  if (target_extruder < 0) return;
-
-  #if ENABLED(DUAL_X_CARRIAGE)
-    int8_t DXC_ext = target_extruder;
-    if (!parser.seen_test('T')) {
-      DXC_ext = filament_sensor.is_trigger(1) ? 1 : 0;
-    }
-  #endif
-
-  #if HAS_MULTI_EXTRUDER
-    const uint8_t active_extruder_before_filament_change = active_extruder;
-    if (active_extruder != target_extruder && TERN1(DUAL_X_CARRIAGE, !idex_is_duplicating()))
-      tool_change(target_extruder, false);
-  #endif
-
-  const float retract = -ABS(parser.axisunitsval('E', E_AXIS, PAUSE_PARK_RETRACT_LENGTH));
-  xyz_pos_t park_point = NOZZLE_PARK_POINT;
-  if (parser.seenval('Z')) park_point.z = parser.linearval('Z');
-  if (parser.seenval('X')) park_point.x = parser.linearval('X');
-  if (parser.seenval('Y')) park_point.y = parser.linearval('Y');
-
-  const float unload_length = -ABS(parser.axisunitsval('U', E_AXIS, fc_settings[active_extruder].unload_length));
-  constexpr float slow_load_length = FILAMENT_CHANGE_SLOW_LOAD_LENGTH;
-  const float fast_load_length = ABS(parser.axisunitsval('L', E_AXIS, fc_settings[active_extruder].load_length));
-  const int beep_count = parser.intval('B', -1);
-
-  SERIAL_ECHOLNPAIR("M600: Pausing print for extruder ", target_extruder);
-  is_m600_pause = true;
-
-  // Step 1: Send combined host action prompt
-  #if ENABLED(HOST_PROMPT_SUPPORT)
-    host_prompt_do(PROMPT_USER_CONTINUE, PSTR("Filament Runout Detected - Insert Filament"), CONTINUE_STR);
-  #endif
-
-  // Step 2: Park nozzle
-  if (pause_print(retract, park_point, true, unload_length DXC_PASS)) {
-    SERIAL_ECHOLNPGM("M600: Pause succeeded");
-
-    // Step 3: Start heater timeout loop
-    bool nozzle_timed_out = false;
-    const millis_t nozzle_timeout = SEC_TO_MS(PAUSE_PARK_NOZZLE_TIMEOUT);
-    millis_t timeout_start = millis();
-    HOTEND_LOOP() thermalManager.heater_idle[e].start(nozzle_timeout);
-    KEEPALIVE_STATE(PAUSED_FOR_USER);
-    wait_for_user = true;
-
-    while (wait_for_user && !nozzle_timed_out) {
-      idle_no_sleep();
-      HOTEND_LOOP() nozzle_timed_out |= thermalManager.heater_idle[e].timed_out;
-      if (nozzle_timed_out || (millis() - timeout_start >= nozzle_timeout)) {
-        #if ENABLED(HOST_PROMPT_SUPPORT)
-          host_action_prompt_end();  // Clear "Insert Filament"
-          host_prompt_do(PROMPT_USER_CONTINUE, PSTR("Heater Timed Out - Reheat?"), PSTR("Reheat"));
-        #endif
-        SERIAL_ECHOLNPGM("Heater timed out - waiting for reheat confirmation");
-        wait_for_user = true;
-        while (wait_for_user) idle_no_sleep();  // Wait for "Reheat"
-        SERIAL_ECHOLNPGM("Reheating nozzle");
-        thermalManager.setTargetHotend(thermalManager.temp_hotend[active_extruder].target, active_extruder);
-        ensure_safe_temperature(false);
-        #if ENABLED(HOST_PROMPT_SUPPORT)
-          host_action_prompt_end();  // Clear "Reheat"
-          host_prompt_do(PROMPT_USER_CONTINUE, PSTR("Filament Runout Detected - Insert Filament"), CONTINUE_STR);
-        #endif
-        timeout_start = millis();  // Reset timeout
-        HOTEND_LOOP() thermalManager.heater_idle[e].start(nozzle_timeout);
-        wait_for_user = true;
-        nozzle_timed_out = false;
-      }
-    }
-
-    // Step 4: Wait for "Continue" and finish sequence
-    SERIAL_ECHOLNPGM("Filament loaded - proceeding with resume");
-    #if ENABLED(HOST_PROMPT_SUPPORT)
-      host_prompt_open(PROMPT_INFO, PSTR("Resuming Print"), DISMISS_STR);
-    #endif
-    SERIAL_ECHOLNPGM("M600: Resuming print");
-    resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH,
-                 beep_count, (parser.seenval('R') ? parser.value_celsius() : 0) DXC_PASS);
-    runout.reset();
-  } else {
-    SERIAL_ECHOLNPGM("M600: Pause failed");
-  }
-  is_m600_pause = false;
-
-  #if HAS_MULTI_EXTRUDER
-    if (active_extruder_before_filament_change != active_extruder)
-      tool_change(active_extruder_before_filament_change, false);
-  #endif
-}
+   // Snapmaker-specific HMI printing setup (always executed if HMI printing)
+   if (is_hmi_printing) {
+     planner.synchronize();
+     power_loss.m600_cur_line = queue.file_line_number();
+     LOG_I("power_loss.m600_cur_line set to %d\r\n", power_loss.cur_line);
+     system_service.set_status(SYSTEM_STATUE_PAUSING, SYSTEM_STATUE_SCOURCE_M600);
+   }
  
- #endif // ADVANCED_PAUSE_FEATURE
+   #if ENABLED(ADVANCED_PAUSE_FEATURE) && !IS_HMI_PRINTING
+      
+     const int8_t target_extruder = get_target_extruder_from_command();
+     if (target_extruder < 0) return;
+ 
+     #if ENABLED(DUAL_X_CARRIAGE)
+       int8_t DXC_ext = target_extruder;
+       if (!parser.seen_test('T')) {
+         DXC_ext = filament_sensor.is_trigger(1) ? 1 : 0;
+       }
+     #else
+       #define DXC_ext target_extruder
+     #endif
+ 
+     #if HAS_MULTI_EXTRUDER
+       const uint8_t active_extruder_before_filament_change = active_extruder;
+       if (active_extruder != target_extruder && TERN1(DUAL_X_CARRIAGE, !idex_is_duplicating()))
+         tool_change(target_extruder, false);
+     #endif
+ 
+     const float retract = -ABS(parser.axisunitsval('E', E_AXIS, PAUSE_PARK_RETRACT_LENGTH));
+     xyz_pos_t park_point = NOZZLE_PARK_POINT;
+     if (parser.seenval('Z')) park_point.z = parser.linearval('Z');
+     if (parser.seenval('X')) park_point.x = parser.linearval('X');
+     if (parser.seenval('Y')) park_point.y = parser.linearval('Y');
+ 
+     const float unload_length = -ABS(parser.axisunitsval('U', E_AXIS, fc_settings[active_extruder].unload_length));
+     constexpr float slow_load_length = FILAMENT_CHANGE_SLOW_LOAD_LENGTH;
+     const float fast_load_length = ABS(parser.axisunitsval('L', E_AXIS, fc_settings[active_extruder].load_length));
+     const int8_t beep_count = parser.intval('B', -1);
+ 
+     SERIAL_ECHOLNPAIR("M600: Pausing print for extruder ", target_extruder);
+     is_m600_pause = true;
+ 
+     if (pause_print(retract, park_point, true, unload_length DXC_PASS)) {
+       SERIAL_ECHOLNPGM("M600: Pause succeeded");
+       wait_for_confirmation(false, beep_count DXC_PASS);
+ 
+       SERIAL_ECHOLNPGM("M600: Resuming print");
+       resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH,
+                    beep_count, (parser.seenval('R') ? parser.value_celsius() : 0) DXC_PASS);
+     }
+     else {
+       SERIAL_ECHOLNPGM("M600: Pause failed");
+     }
+ 
+     is_m600_pause = false;
+ 
+     #if HAS_MULTI_EXTRUDER
+       if (active_extruder_before_filament_change != active_extruder)
+         tool_change(active_extruder_before_filament_change, false);
+     #endif
+   #endif // ADVANCED_PAUSE_FEATURE && !IS_HMI_PRINTING
+ }

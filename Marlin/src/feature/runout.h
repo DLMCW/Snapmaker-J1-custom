@@ -63,7 +63,7 @@ class FilamentMonitor : public FilamentMonitorBase {
     static void setup();
     static void reset();
     static void filament_present(const uint8_t extruder);
-    static void runout_detected(const uint8_t extruder);
+    static void runout_detected(const uint8_t extruder); // Fixed: Added extruder parameter
     static bool is_triggered(const uint8_t extruder) { return triggered[extruder]; }
     static void set_triggered(const uint8_t extruder, bool value) { triggered[extruder] = value; }
 

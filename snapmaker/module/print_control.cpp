@@ -595,6 +595,9 @@ ErrCode PrintControl::stop() {
   }
   // reset to normal
   print_control.set_noise_mode(NOISE_NOIMAL_MODE);
+  
+  // Reset HMI printing flag after print stops
+  is_hmi_printing = false;
 
   return E_SUCCESS;
 }
@@ -646,4 +649,6 @@ void PrintControl::error_and_stop() {
   motion_control.retrack_e(PRINT_RETRACK_DISTANCE, CHANGE_FILAMENT_SPEED);
   motion_control.home();
   system_service.set_status(SYSTEM_STATUE_IDLE);
+  // Reset HMI printing flag after print stops
+  is_hmi_printing = false;
 }

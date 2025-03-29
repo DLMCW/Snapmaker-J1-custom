@@ -73,20 +73,14 @@
  }
  
  void FilamentMonitor::runout_detected(uint8_t e) {
-   if (is_hmi_printing) return;
-   if (is_triggered(e)) return;
+   if (is_hmi_printing) return;  // Skip for HMI prints
+   if (is_triggered(e)) return;  // Avoid re-triggering
    SERIAL_ECHOLNPAIR("Runout detected on extruder ", e);
    triggered[e] = true;
-   if (!queue.enqueue_one_P(PSTR("M600"))) {  // Changed to enqueue_one_P
-     SERIAL_ECHOLNPGM("Failed to enqueue M600");
-   } else {
-     SERIAL_ECHOLNPGM("M600 enqueued successfully");
-   }
+   event_filament_runout(e);     // Call the standard event handler
  }
  
  void event_filament_runout(const uint8_t extruder) {
-  if (did_pause_print || !is_hmi_printing) return;  // Skip for OctoPrint
- 
    #if ENABLED(TOOLCHANGE_MIGRATION_FEATURE)
      if (migration.in_progress) {
        DEBUG_ECHOLNPGM("Migration Already In Progress");
@@ -104,7 +98,6 @@
      const char tool = '0' + TERN0(MULTI_FILAMENT_SENSOR, extruder);
    #endif
  
-   //action:out_of_filament
    #if ENABLED(HOST_PROMPT_SUPPORT)
      host_action_prompt_begin(PROMPT_FILAMENT_RUNOUT, PSTR("FilamentRunout T"), tool);
      host_action_prompt_show();
@@ -114,21 +107,18 @@
  
    #if ENABLED(HOST_ACTION_COMMANDS)
      if (run_runout_script
-       && ( strstr(FILAMENT_RUNOUT_SCRIPT, "M600")
+       && (strstr(FILAMENT_RUNOUT_SCRIPT, "M600")
          || strstr(FILAMENT_RUNOUT_SCRIPT, "M125")
-         || TERN0(ADVANCED_PAUSE_FEATURE, strstr(FILAMENT_RUNOUT_SCRIPT, "M25"))
-       )
+         || TERN0(ADVANCED_PAUSE_FEATURE, strstr(FILAMENT_RUNOUT_SCRIPT, "M25")))
      ) {
        host_action_paused(false);
      }
      else {
-       // Legacy Repetier command for use until newer version supports standard dialog
        #ifdef ACTION_ON_FILAMENT_RUNOUT
          host_action(PSTR(ACTION_ON_FILAMENT_RUNOUT " T"), false);
          SERIAL_CHAR(tool);
          SERIAL_EOL();
        #endif
- 
        host_action_pause(false);
      }
      SERIAL_ECHOPGM(" " ACTION_REASON_ON_FILAMENT_RUNOUT " ");
