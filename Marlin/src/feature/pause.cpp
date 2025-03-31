@@ -352,11 +352,11 @@
  
    planner.set_e_position_mm((destination.e = current_position.e = resume_position.e));
  
-   #ifdef ACTION_ON_RESUMED
-     host_action_resumed();
-   #elif defined(ACTION_ON_RESUME)
-     host_action_resume();
-   #endif
+   #if defined(ACTION_ON_RESUME)
+    host_action_resume();  
+   #elif defined(ACTION_ON_RESUMED)
+    host_action_resumed();
+  #endif
  
    --did_pause_print;
  
