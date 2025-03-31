@@ -1424,13 +1424,30 @@
  * RAMPS-based boards use SERVO3_PIN for the first runout sensor.
  * For other boards you may need to define FIL_RUNOUT_PIN, FIL_RUNOUT2_PIN, etc.
  */
-//#define FILAMENT_RUNOUT_SENSOR
-#if ENABLED(FILAMENT_RUNOUT_SENSOR)
-  #define FIL_RUNOUT_ENABLED_DEFAULT true // Enable the sensor on startup. Override with M412 followed by M500.
-  #define NUM_RUNOUT_SENSORS   1          // Number of sensors, up to one per extruder. Define a FIL_RUNOUT#_PIN for each.
+ #define FILAMENT_RUNOUT_SENSOR
+ 
+ #define CUSTOM_FILAMENT_SENSOR            // Snapmaker J1 custom ADC filament runout sensors.
+ 
+ #if ENABLED(FILAMENT_RUNOUT_SENSOR)
+   #define FIL_RUNOUT_ENABLED_DEFAULT true // Enable the sensor on startup. Override with M412 followed by M500.
+   #define NUM_RUNOUT_SENSORS   2          // Number of sensors, up to one per extruder. Define a FIL_RUNOUT#_PIN for each.
+   
+   
+   // Not used when CUSTOM_FILAMENT_SENSOR enabled, but must be defined.
+   #ifndef FIL_RUNOUT_PIN
+     #define FIL_RUNOUT_PIN    -1         // Dummy pin for custom ADC sensor
+   #endif
+   #ifndef FIL_RUNOUT2_PIN
+     #define FIL_RUNOUT2_PIN    -1         // Dummy pin for custom ADC sensor
+   #endif
+   #define FIL_RUNOUT_STATE   HIGH         // Placeholder state (unused with -1 pins)
+   #define FIL_RUNOUT1_STATE  FIL_RUNOUT_STATE
+   #define FIL_RUNOUT2_STATE  FIL_RUNOUT_STATE   
+ #endif
 
-  #define FIL_RUNOUT_STATE     LOW        // Pin state indicating that filament is NOT present.
-  #define FIL_RUNOUT_PULLUP               // Use internal pullup for filament runout pins.
+
+  //#define FIL_RUNOUT_STATE     LOW        // Pin state indicating that filament is NOT present.
+  //#define FIL_RUNOUT_PULLUP               // Use internal pullup for filament runout pins.
   //#define FIL_RUNOUT_PULLDOWN           // Use internal pulldown for filament runout pins.
   //#define WATCH_ALL_RUNOUT_SENSORS      // Execute runout script on any triggering sensor, not only for the active extruder.
                                           // This is automatically enabled for MIXING_EXTRUDERs.
@@ -1484,7 +1501,7 @@
     // large enough to avoid false positives.)
     //#define FILAMENT_MOTION_SENSOR
   #endif
-#endif
+
 
 //===========================================================================
 //=============================== Bed Leveling ==============================
@@ -1876,11 +1893,11 @@
  *    P1  Raise the nozzle always to Z-park height.
  *    P2  Raise the nozzle by Z-park amount, limited to Z_MAX_POS.
  */
-//#define NOZZLE_PARK_FEATURE
+#define NOZZLE_PARK_FEATURE
 
 #if ENABLED(NOZZLE_PARK_FEATURE)
   // Specify a park position as { X, Y, Z_raise }
-  #define NOZZLE_PARK_POINT { (X_MIN_POS + 10), (Y_MAX_POS - 10), 20 }
+  #define NOZZLE_PARK_POINT { (X_MIN_POS + 13), (Y_MAX_POS - 5), 20 }
   //#define NOZZLE_PARK_X_ONLY          // X move only is required to park
   //#define NOZZLE_PARK_Y_ONLY          // Y move only is required to park
   #define NOZZLE_PARK_Z_RAISE_MIN   2   // (mm) Always raise Z by at least this distance
