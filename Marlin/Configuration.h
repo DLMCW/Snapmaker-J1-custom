@@ -1896,13 +1896,12 @@
 #define NOZZLE_PARK_FEATURE
 
 #if ENABLED(NOZZLE_PARK_FEATURE)
-  // Specify a park position as { X, Y, Z_raise }
-  #define NOZZLE_PARK_POINT { (X_MIN_POS + 13), (Y_MAX_POS - 5), 20 }
-  //#define NOZZLE_PARK_X_ONLY          // X move only is required to park
-  //#define NOZZLE_PARK_Y_ONLY          // Y move only is required to park
+  // Define park positions as separate { X, Y, Z_raise } for each extruder
+  #define NOZZLE_PARK_POINT_T0 { -6, Y_MIN_POS, 20 }  /* T0: park position */
+  #define NOZZLE_PARK_POINT_T1 { 331, Y_MIN_POS, 20 } /* T1: park position */
   #define NOZZLE_PARK_Z_RAISE_MIN   2   // (mm) Always raise Z by at least this distance
-  #define NOZZLE_PARK_XY_FEEDRATE 100   // (mm/s) X and Y axes feedrate (also used for delta Z axis)
-  #define NOZZLE_PARK_Z_FEEDRATE    5   // (mm/s) Z axis feedrate (not used for delta printers)
+  #define NOZZLE_PARK_XY_FEEDRATE 100   // (mm/s) X and Y axes feedrate
+  #define NOZZLE_PARK_Z_FEEDRATE    5   // (mm/s) Z axis feedrate
 #endif
 
 /**

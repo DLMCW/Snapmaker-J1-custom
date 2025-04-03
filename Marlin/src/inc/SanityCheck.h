@@ -961,12 +961,25 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
 #endif
 
 #if ENABLED(NOZZLE_PARK_FEATURE)
-  constexpr float npp[] = NOZZLE_PARK_POINT;
-  static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.");
-  constexpr xyz_pos_t npp_xyz = NOZZLE_PARK_POINT;
-  static_assert(WITHIN(npp_xyz.x, X_MIN_POS, X_MAX_POS), "NOZZLE_PARK_POINT.X is out of bounds (X_MIN_POS, X_MAX_POS).");
-  static_assert(WITHIN(npp_xyz.y, Y_MIN_POS, Y_MAX_POS), "NOZZLE_PARK_POINT.Y is out of bounds (Y_MIN_POS, Y_MAX_POS).");
-  static_assert(WITHIN(npp_xyz.z, Z_MIN_POS, Z_MAX_POS), "NOZZLE_PARK_POINT.Z is out of bounds (Z_MIN_POS, Z_MAX_POS).");
+  // Check NOZZLE_PARK_POINT_T0
+  constexpr float npp_t0[] = NOZZLE_PARK_POINT_T0;
+  static_assert(COUNT(npp_t0) == XYZ, "NOZZLE_PARK_POINT_T0 requires X, Y, and Z values.");
+  constexpr xyz_pos_t npp_t0_xyz = NOZZLE_PARK_POINT_T0;
+  static_assert(WITHIN(npp_t0_xyz.x, X_MIN_POS, X_MAX_POS), "NOZZLE_PARK_POINT_T0.X is out of bounds (X_MIN_POS, X_MAX_POS).");
+  static_assert(WITHIN(npp_t0_xyz.y, Y_MIN_POS, Y_MAX_POS), "NOZZLE_PARK_POINT_T0.Y is out of bounds (Y_MIN_POS, Y_MAX_POS).");
+  static_assert(WITHIN(npp_t0_xyz.z, Z_MIN_POS, Z_MAX_POS), "NOZZLE_PARK_POINT_T0.Z is out of bounds (Z_MIN_POS, Z_MAX_POS).");
+
+  // Check NOZZLE_PARK_POINT_T1
+  constexpr float npp_t1[] = NOZZLE_PARK_POINT_T1;
+  static_assert(COUNT(npp_t1) == XYZ, "NOZZLE_PARK_POINT_T1 requires X, Y, and Z values.");
+  constexpr xyz_pos_t npp_t1_xyz = NOZZLE_PARK_POINT_T1;
+  #if ENABLED(DUAL_X_CARRIAGE)
+    static_assert(WITHIN(npp_t1_xyz.x, X_MIN_POS, 340), "NOZZLE_PARK_POINT_T1.X is out of bounds (X_MIN_POS, hotend_offset[1].x).");
+  #else
+    static_assert(WITHIN(npp_t1_xyz.x, X_MIN_POS, X_MAX_POS), "NOZZLE_PARK_POINT_T1.X is out of bounds (X_MIN_POS, X_MAX_POS).");
+  #endif
+  static_assert(WITHIN(npp_t1_xyz.y, Y_MIN_POS, Y_MAX_POS), "NOZZLE_PARK_POINT_T1.Y is out of bounds (Y_MIN_POS, Y_MAX_POS).");
+  static_assert(WITHIN(npp_t1_xyz.z, Z_MIN_POS, Z_MAX_POS), "NOZZLE_PARK_POINT_T1.Z is out of bounds (Z_MIN_POS, Z_MAX_POS).");
 #endif
 
 /**
