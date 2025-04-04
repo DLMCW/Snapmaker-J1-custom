@@ -188,48 +188,47 @@
        { LOG_I("trun off probe power\n"); switch_detect.trun_off_probe_pwr(); }
        break;
        case 200:
-       
-       if (!is_hmi_printing) {
-         const float speed = parser.floatval('V', planner.settings.max_feedrate_mm_s[X_AXIS]);
-         const float accel = parser.floatval('A', planner.settings.max_acceleration_mm_per_s2[X_AXIS]);
-         const uint8_t inactive_ext = active_extruder == 0 ? 1 : 0;
-     
-         SERIAL_ECHOLNPAIR("M2000 S200: Speed=", speed);
-         SERIAL_ECHOLNPAIR("M2000 S200: Accel=", accel);
-             
-         if (!print_job_timer.isRunning()) {
-           SERIAL_ECHOLNPGM("M2000 S200: Not printing, cannot move extruder");
-           return;
-         }
-         if (dual_x_carriage_mode > DXC_FULL_CONTROL_MODE) {
-           SERIAL_ECHOLNPGM("M2000 S200: Duplication or mirror mode not supported");
-           return;
-         }
-     
-         const float saved_accel = planner.settings.acceleration;
-         const uint8_t saved_ext = active_extruder;
-         planner.settings.acceleration = accel;
-     
-         // Step 1: Park the inactive extruder
-         active_extruder = inactive_ext;
-         current_position.x = inactive_extruder_x;
-         planner.set_position_mm(current_position);
-         const float target_x = x_home_pos(inactive_ext);
-         SERIAL_ECHOLNPAIR("M2000 S200: Moving T", inactive_ext, " to X=", target_x);
-         endstops.enable_globally(false); // Disable software endstops
-         do_blocking_move_to_x(target_x, speed); // Move to -13 (T0) or 338.30 (T1)
-         endstops.enable_globally(true); // Re-enable software endstops
-         inactive_extruder_x = target_x;
-     
-         // Step 2: Switch back to the active extruder
-         active_extruder = saved_ext;
-         current_position.x = x_home_pos(saved_ext); // T0 at -13, T1 at 338.30
-         planner.set_position_mm(current_position);
-         planner.settings.acceleration = saved_accel;
-     
-         SERIAL_ECHOLNPAIR("M2000 S200: T", inactive_ext, " parked at X", target_x);
-         SERIAL_ECHOLNPAIR("M2000 S200: Resumed with T", active_extruder, " at X", current_position.x);
-       }
+  if (!is_hmi_printing) {
+    const float speed = parser.floatval('V', planner.settings.max_feedrate_mm_s[X_AXIS]);
+    const float accel = parser.floatval('A', planner.settings.max_acceleration_mm_per_s2[X_AXIS]);
+    const uint8_t inactive_ext = active_extruder == 0 ? 1 : 0;
+
+    SERIAL_ECHOLNPAIR("M2000 S200: Speed=", speed);
+    SERIAL_ECHOLNPAIR("M2000 S200: Accel=", accel);
+
+    if (!print_job_timer.isRunning()) {
+      SERIAL_ECHOLNPGM("M2000 S200: Not printing, cannot move extruder");
+      return;
+    }
+    if (dual_x_carriage_mode > DXC_FULL_CONTROL_MODE) {
+      SERIAL_ECHOLNPGM("M2000 S200: Duplication or mirror mode not supported");
+      return;
+    }
+
+    const float saved_accel = planner.settings.acceleration;
+    const uint8_t saved_ext = active_extruder;
+    planner.settings.acceleration = accel;
+
+    SET_SOFT_ENDSTOP_LOOSE(true); // Disable software endstops for tool change
+
+    active_extruder = inactive_ext;
+    current_position.x = inactive_extruder_x;
+    planner.set_position_mm(current_position);
+    const float target_x = x_home_pos(inactive_ext);
+    SERIAL_ECHOLNPAIR("M2000 S200: Moving T", inactive_ext, " to X=", target_x);
+    do_blocking_move_to_x(target_x, speed);
+    inactive_extruder_x = target_x;
+
+    active_extruder = saved_ext;
+    current_position.x = x_home_pos(saved_ext); // T0 at -13, T1 at 338.30
+    planner.set_position_mm(current_position);
+    planner.settings.acceleration = saved_accel;
+
+    SET_SOFT_ENDSTOP_LOOSE(false); // Re-enable software endstops after tool change
+
+    SERIAL_ECHOLNPAIR("M2000 S200: T", inactive_ext, " parked at X", target_x);
+    SERIAL_ECHOLNPAIR("M2000 S200: Resumed with T", active_extruder, " at X", current_position.x);
+  }
        else {
          // Original Snapmaker HMI code
          if (print_control.get_mode() >= PRINT_DUPLICATION_MODE) {
