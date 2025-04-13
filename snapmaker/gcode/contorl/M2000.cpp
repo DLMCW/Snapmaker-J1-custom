@@ -209,7 +209,7 @@
     const uint8_t saved_ext = active_extruder;
     planner.settings.acceleration = accel;
 
-    SET_SOFT_ENDSTOP_LOOSE(true); // Disable software endstops for tool change
+    //SET_SOFT_ENDSTOP_LOOSE(true); // Disable software endstops for tool change
 
     active_extruder = inactive_ext;
     current_position.x = inactive_extruder_x;
@@ -224,7 +224,7 @@
     planner.set_position_mm(current_position);
     planner.settings.acceleration = saved_accel;
 
-    SET_SOFT_ENDSTOP_LOOSE(false); // Re-enable software endstops after tool change
+    //SET_SOFT_ENDSTOP_LOOSE(false); // Re-enable software endstops after tool change
 
     SERIAL_ECHOLNPAIR("M2000 S200: T", inactive_ext, " parked at X", target_x);
     SERIAL_ECHOLNPAIR("M2000 S200: Resumed with T", active_extruder, " at X", current_position.x);

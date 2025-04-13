@@ -1364,7 +1364,7 @@
 #define X_MIN_POS ((X_BED_SIZE / 2) - BAD_CENTER_X_POS)
 #define Y_MIN_POS ((Y_BED_SIZE / 2) - BAD_CENTER_Y_POS)
 #define Z_MIN_POS 0
-#define X_MAX_POS X_BED_SIZE
+#define X_MAX_POS 338.5
 #define Y_MAX_POS Y_BED_SIZE
 #define Z_MAX_POS 215
 //#define I_MIN_POS 0
