@@ -54,7 +54,7 @@ SnapDebug debug;
 
 #define STR_LOG_LEN_TOO_LARGE  ("log data too large\r\n")
 
-static debug_level_e  debug_msg_level = SNAP_DEBUG_LEVEL_INFO;
+static debug_level_e debug_msg_level = SNAP_DEBUG_LEVEL_WARNING;
 // static char log_buf[SNAP_LOG_BUFFER_SIZE + 2];
 
 const char *snap_debug_str[SNAP_DEBUG_LEVEL_MAX] = {
