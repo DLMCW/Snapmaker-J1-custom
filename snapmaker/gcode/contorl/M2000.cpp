@@ -33,10 +33,10 @@
  #include "../../module/factory_data.h"
  #include "../../module/calibtration.h"
  #include <EEPROM.h>
- #include "../../Marlin/Configuration.h"
+ #include "../../Marlin/src/inc/MarlinConfig.h"
  #include "../../Marlin/src/module/planner.h"
  #include "../../Marlin/src/module/motion.h"
- #include "../../Marlin/src/module/printcounter.h"
+ #include "../../../Marlin/src/module/printcounter.h"
  
  extern bool is_hmi_printing;
  
@@ -59,9 +59,7 @@
        WRITE(CHAMBER_AUTO_FAN_PIN, 1);
        break;
      case 5:
-       {
-         event_handler.recv_enable(EVENT_SOURCE_MARLIN);
-       }
+       { event_handler.recv_enable(EVENT_SOURCE_MARLIN); }
        break;
      case 6:
        WRITE(MOTOR_PWR_PIN, 1);
@@ -103,9 +101,7 @@
        }
        break;
      case 13:
-       {
-         LOG_I("E_COUNT: %d\r\n", stepper.position(E_AXIS));
-       }
+       { LOG_I("E_COUNT: %d\r\n", stepper.position(E_AXIS)); }
        break;
      case 14:
        {
@@ -146,30 +142,19 @@
        break;
      case 104:
        {
-         if(parser.seen('X')) {
-           LOG_I("X speed %f mms\r\n", axisManager.axis[0].getCurrentSpeedMMs());
-         }
-         else if(parser.seen('Y')) {
-           LOG_I("Y speed %f mms\r\n", axisManager.axis[1].getCurrentSpeedMMs());
-         }
-         else if(parser.seen('Z')) {
-           LOG_I("Z speed %f mms\r\n", axisManager.axis[2].getCurrentSpeedMMs());
-         }
+         if (parser.seen('X')) LOG_I("X speed %f mms\r\n", axisManager.axis[0].getCurrentSpeedMMs());
+         else if (parser.seen('Y')) LOG_I("Y speed %f mms\r\n", axisManager.axis[1].getCurrentSpeedMMs());
+         else if (parser.seen('Z')) LOG_I("Z speed %f mms\r\n", axisManager.axis[2].getCurrentSpeedMMs());
        }
        break;
      case 105:
        {
          uint32_t gcode_jumper_line = parser.longval('J', 0x0);
-         if (gcode_jumper_line) {
-           power_loss.next_req = gcode_jumper_line;
-         }
+         if (gcode_jumper_line) power_loss.next_req = gcode_jumper_line;
        }
        break;
      case 110:
-       {
-         LOG_I("Erase factory data\r\n");
-         fd_srv.erase();
-       }
+       { LOG_I("Erase factory data\r\n"); fd_srv.erase(); }
        break;
      case 111:
        {
@@ -185,9 +170,7 @@
        }
        break;
      case 112:
-       {
-         fd_srv.log();
-       }
+       { fd_srv.log(); }
        break;
      case 113:
        {
@@ -196,59 +179,58 @@
        }
        break;
      case 114:
-       {
-         LOG_I("print noise mode %u\n", (uint8_t)print_control.get_noise_mode());
-       }
+       { LOG_I("print noise mode %u\n", (uint8_t)print_control.get_noise_mode()); }
        break;
      case 115:
-       {
-         LOG_I("trun on probe power\n");
-         switch_detect.trun_on_probe_pwr();
-       }
+       { LOG_I("trun on probe power\n"); switch_detect.trun_on_probe_pwr(); }
        break;
      case 116:
-       {
-         LOG_I("trun off probe power\n");
-         switch_detect.trun_off_probe_pwr();
-       }
+       { LOG_I("trun off probe power\n"); switch_detect.trun_off_probe_pwr(); }
        break;
-     case 200: 
-       if (!is_hmi_printing) {
-         const float speed = parser.floatval('V', planner.settings.max_feedrate_mm_s[X_AXIS]); // mm/s
-         const float accel = parser.floatval('A', planner.settings.max_acceleration_mm_per_s2[X_AXIS]); // mm/s²
-         const uint8_t current_ext = active_extruder; 
-         const uint8_t inactive_ext = current_ext == 0 ? 1 : 0; 
- 
-         // Marlin printing status check
-         if (!print_job_timer.isRunning()) {
-           SERIAL_ECHOLNPGM("M2000 S200: Not printing, cannot move extruder");
-           return;
-         }
- 
-         // Marlin duplication/mirror mode check
-         if (dual_x_carriage_mode > DXC_FULL_CONTROL_MODE) {
-           SERIAL_ECHOLNPGM("M2000 S200: Duplication or mirror mode not supported");
-           return;
-         }
- 
-         // Check if inactive extruder needs to park
-         if (fabs(x_home_pos(inactive_ext) - inactive_extruder_x) < 0.1) {
-           SERIAL_ECHOLNPGM("M2000 S200: No move required");
-           return;
-         }
- 
-         // Queue inactive extruder (e.g., T0) to park
-         xyze_pos_t target = current_position;
-         target.x = x_home_pos(inactive_ext);
-         active_extruder = inactive_ext; // Temporarily control inactive extruder
-         planner.buffer_line(target, speed, inactive_ext, accel);
-         planner.synchronize();
-         active_extruder = current_ext; // Restore new active extruder
-         inactive_extruder_x = x_home_pos(inactive_ext); // Update inactive position
- 
-         SERIAL_ECHOLNPAIR("M2000 S200: T", inactive_ext, " parked at X", x_home_pos(inactive_ext));
-       }
+       case 200:
+  if (!is_hmi_printing) {
+    const float speed = parser.floatval('V', planner.settings.max_feedrate_mm_s[X_AXIS]);
+    const float accel = parser.floatval('A', planner.settings.max_acceleration_mm_per_s2[X_AXIS]);
+    const uint8_t inactive_ext = active_extruder == 0 ? 1 : 0;
+
+    SERIAL_ECHOLNPAIR("M2000 S200: Speed=", speed);
+    SERIAL_ECHOLNPAIR("M2000 S200: Accel=", accel);
+
+    if (!print_job_timer.isRunning()) {
+      SERIAL_ECHOLNPGM("M2000 S200: Not printing, cannot move extruder");
+      return;
+    }
+    if (dual_x_carriage_mode > DXC_FULL_CONTROL_MODE) {
+      SERIAL_ECHOLNPGM("M2000 S200: Duplication or mirror mode not supported");
+      return;
+    }
+
+    const float saved_accel = planner.settings.acceleration;
+    const uint8_t saved_ext = active_extruder;
+    planner.settings.acceleration = accel;
+
+    //SET_SOFT_ENDSTOP_LOOSE(true); // Disable software endstops for tool change
+
+    active_extruder = inactive_ext;
+    current_position.x = inactive_extruder_x;
+    planner.set_position_mm(current_position);
+    const float target_x = x_home_pos(inactive_ext);
+    SERIAL_ECHOLNPAIR("M2000 S200: Moving T", inactive_ext, " to X=", target_x);
+    do_blocking_move_to_x(target_x, speed);
+    inactive_extruder_x = target_x;
+
+    active_extruder = saved_ext;
+    current_position.x = x_home_pos(saved_ext); // T0 at -13, T1 at 338.30
+    planner.set_position_mm(current_position);
+    planner.settings.acceleration = saved_accel;
+
+    //SET_SOFT_ENDSTOP_LOOSE(false); // Re-enable software endstops after tool change
+
+    SERIAL_ECHOLNPAIR("M2000 S200: T", inactive_ext, " parked at X", target_x);
+    SERIAL_ECHOLNPAIR("M2000 S200: Resumed with T", active_extruder, " at X", current_position.x);
+  }
        else {
+         // Original Snapmaker HMI code
          if (print_control.get_mode() >= PRINT_DUPLICATION_MODE) {
            LOG_I("work mode do not support this command\r\n");
            return;
